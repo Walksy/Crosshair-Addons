@@ -1,0 +1,2 @@
+case GuiSpriteScaling\.Stretch _ -> => case GuiSpriteScaling.Stretch stretch ->
+\bGuiGraphicsExtractor\b => GuiGraphics

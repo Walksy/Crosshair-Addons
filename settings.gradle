@@ -4,7 +4,36 @@ pluginManagement {
 			name = 'Fabric'
 			url = 'https://maven.fabricmc.net/'
 		}
+		maven {
+			name = 'NeoForged'
+			url = 'https://maven.neoforged.net/releases'
+		}
 		mavenCentral()
 		gradlePluginPortal()
+	}
+}
+
+rootProject.name = 'CrosshairAddons'
+
+def requested = providers.gradleProperty('crosshairaddons.versions').getOrElse('all').split(',')*.trim().findAll { it }
+def loadersProperty = providers.gradleProperty('crosshairaddons.loaders')
+def loaders = loadersProperty.getOrElse('fabric,neoforge').split(',')*.trim().findAll { it }
+def ideSync = System.getProperty('idea.sync.active') == 'true' && !loadersProperty.isPresent()
+def versionDirs = (file('versions').listFiles() ?: new File[0])
+		.findAll { it.directory && new File(it, 'gradle.properties').file }
+
+versionDirs.each { dir ->
+	if (requested.contains('all') || requested.contains(dir.name)) {
+		if (loaders.contains('fabric')) {
+			include(dir.name)
+			project(":${dir.name}").projectDir = dir
+		}
+		if (loaders.contains('neoforge') && !ideSync) {
+			def name = "neoforge-${dir.name}".toString()
+			def neoforgeDir = new File(rootDir, "build/loader/neoforge/${dir.name}")
+			neoforgeDir.mkdirs()
+			include(name)
+			project(":${name}").projectDir = neoforgeDir
+		}
 	}
 }

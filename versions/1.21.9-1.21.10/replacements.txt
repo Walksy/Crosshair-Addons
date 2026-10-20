@@ -1,0 +1,3 @@
+net/minecraft/resources/Identifier => net/minecraft/resources/ResourceLocation
+\bIdentifier\b => ResourceLocation
+\.identifier\(\) => .location()

@@ -1,15 +1,9 @@
 package walksy.crosshairaddons.mixin;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import main.walksy.lib.core.config.local.options.type.PixelGridAnimation;
+import main.walksy.lib.api.hud.HudPlacement;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.texture.TextureAtlas;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.metadata.gui.GuiMetadataSection;
-import net.minecraft.client.resources.metadata.gui.GuiSpriteScaling;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.phys.Vec2;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -17,13 +11,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import walksy.crosshairaddons.CrosshairAddons;
-import walksy.crosshairaddons.config.Config;
-
-import java.util.Map;
-import java.util.function.Supplier;
+import walksy.crosshairaddons.config.CrosshairAddonsConfig;
 
 @Mixin(GuiGraphicsExtractor.class)
 public abstract class GuiGraphicsExtractorMixin {
+
+    @Unique
+    private boolean crosshairaddons$moving;
 
     @Shadow
     public abstract int guiWidth();
@@ -32,58 +26,75 @@ public abstract class GuiGraphicsExtractorMixin {
     public abstract int guiHeight();
 
     @Shadow
-    @Final
-    private TextureAtlas guiSprites;
+    public abstract void blitSprite(RenderPipeline renderPipeline, Identifier sprite, int x, int y, int width, int height, int color);
 
     @Shadow
-    public abstract void blitSprite(RenderPipeline renderPipeline, TextureAtlasSprite sprite, int x, int y, int width, int height, int color);
+    public abstract void blitSprite(RenderPipeline renderPipeline, Identifier sprite, int textureWidth, int textureHeight, int u, int v, int x, int y, int width, int height, int color);
 
-    @Shadow
-    protected abstract void blitTiledSprite(RenderPipeline renderPipeline, TextureAtlasSprite sprite, int x, int y, int width, int height, int textureX, int textureY, int tileWidth, int tileHeight, int spriteWidth, int spriteHeight, int color);
+    @Inject(method = "blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIII)V", at = @At("HEAD"), cancellable = true)
+    public void moveAttackIndicator(final RenderPipeline pipeline, final Identifier sprite, final int x, final int y, final int width, final int height, final int color, final CallbackInfo ci) {
+        final int newY = this.crosshairaddons$movedY(sprite);
+        if (newY == -1) {
+            return;
+        }
+        ci.cancel();
+        this.crosshairaddons$moving = true;
+        try {
+            this.blitSprite(pipeline, sprite, x, newY, width, height, color);
+        } finally {
+            this.crosshairaddons$moving = false;
+        }
+    }
 
-    @Shadow
-    protected abstract void blitNineSlicedSprite(RenderPipeline renderPipeline, TextureAtlasSprite sprite, GuiSpriteScaling.NineSlice nineSlice, int x, int y, int width, int height, int color);
-
-    @Shadow
-    protected abstract void blitSprite(RenderPipeline renderPipeline, TextureAtlasSprite sprite, int spriteWidth, int spriteHeight, int textureX, int textureY, int x, int y, int width, int height, int color);
-
-    @Shadow
-    public abstract void enableScissor(int x0, int y0, int x1, int y1);
-
-    @Shadow
-    public abstract void disableScissor();
-
-    @Shadow
-    public abstract void blitSprite(RenderPipeline renderPipeline, Identifier location, int x, int y, int width, int height, int color);
+    @Inject(method = "blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIIIIIII)V", at = @At("HEAD"), cancellable = true)
+    public void moveAttackIndicatorProgress(final RenderPipeline pipeline, final Identifier sprite, final int textureWidth, final int textureHeight, final int u, final int v, final int x, final int y, final int width, final int height, final int color, final CallbackInfo ci) {
+        final int newY = this.crosshairaddons$movedY(sprite);
+        if (newY == -1) {
+            return;
+        }
+        ci.cancel();
+        this.crosshairaddons$moving = true;
+        try {
+            this.blitSprite(pipeline, sprite, textureWidth, textureHeight, u, v, x, newY, width, height, color);
+        } finally {
+            this.crosshairaddons$moving = false;
+        }
+    }
 
     @Unique
-    private int getAttackIndicatorY() {
-        int w = this.guiWidth();
-        int h = this.guiHeight();
+    private int crosshairaddons$movedY(final Identifier sprite) {
+        if (this.crosshairaddons$moving || !sprite.getPath().contains("hud/crosshair_attack")) {
+            return -1;
+        }
+        return this.crosshairaddons$attackIndicatorY();
+    }
 
-        int ix = w / 2 - 8;
+    @Unique
+    private int crosshairaddons$attackIndicatorY() {
+        final int w = this.guiWidth();
+        final int h = this.guiHeight();
+
+        final int ix = w / 2 - 8;
         int iy = h / 2 - 7 + 16;
 
-        int iL = ix, iR = ix + 16, iT = iy, iB = iy + 16;
+        final int iL = ix;
+        final int iR = ix + 16;
+        int iT = iy;
+        int iB = iy + 16;
 
         final int pad = 0;
-        final int gap = Config.attackIndicatorGap;
+        final int gap = CrosshairAddonsConfig.attackIndicatorGap;
 
-        for (Map.Entry<Supplier<PixelGridAnimation>, Supplier<Boolean>> e : CrosshairAddons.getAddons().entrySet()) {
-            Supplier<Boolean> enabledSupplier = e.getValue();
-            if (enabledSupplier == null || !Boolean.TRUE.equals(enabledSupplier.get())) continue;
+        for (final HudPlacement space : CrosshairAddons.addonSpaces()) {
+            if (!space.visible()) continue;
 
-            PixelGridAnimation a = e.getKey().get();
-            Vec2 p = a.getAbsolutePosition();
-            int s = Math.max(1, Math.round(a.getSize() * 16f));
-
-            int aL = (int) (p.x - pad);
-            int aR = (int) (p.x + s + pad);
-            int aT = (int) (p.y - pad);
-            int aB = (int) (p.y + s + pad);
+            final int aL = (int) (space.screenX() - pad);
+            final int aR = (int) (space.screenX() + space.width() + pad);
+            final int aT = (int) (space.screenY() - pad);
+            final int aB = (int) (space.screenY() + space.height() + pad);
 
             if (aL < iR && aR > iL && aT < iB && aB > iT) {
-                int candidateIy = aB + gap;
+                final int candidateIy = aB + gap;
                 if (candidateIy > iy) {
                     iy = candidateIy;
                     iT = iy;
@@ -92,55 +103,7 @@ public abstract class GuiGraphicsExtractorMixin {
             }
         }
 
-        int defaultIy = h / 2 - 7 + 16;
+        final int defaultIy = h / 2 - 7 + 16;
         return iy == defaultIy ? -1 : iy;
-    }
-
-    @Inject(method = "blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIII)V",
-            at = @At("HEAD"), cancellable = true)
-    public void blitSprite(RenderPipeline pipeline, Identifier sprite, int x, int y, int width, int height, int color, CallbackInfo ci) {
-        if (!sprite.getPath().contains("hud/crosshair_attack")) return;
-
-        int newY = this.getAttackIndicatorY();
-        if (newY == -1) {
-            return;
-        }
-
-        ci.cancel();
-        TextureAtlasSprite sprite2 = this.guiSprites.getSprite(sprite);
-        GuiSpriteScaling scaling = this.crosshairaddons$getSpriteScaling(sprite2);
-        switch (scaling) {
-            case GuiSpriteScaling.Stretch _ -> this.blitSprite(pipeline, sprite2, x, newY, width, height, color);
-            case GuiSpriteScaling.Tile(int width1, int height1) -> this.blitTiledSprite(pipeline, sprite2, x, newY, width, height, 0, 0, width1, height1, width1, height1, color);
-            case GuiSpriteScaling.NineSlice nineSlice -> this.blitNineSlicedSprite(pipeline, sprite2, nineSlice, x, newY, width, height, color);
-            default -> {}
-        }
-    }
-
-    @Inject(method = "blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIIIIIII)V",
-            at = @At("HEAD"), cancellable = true)
-    public void blitSprite2(RenderPipeline pipeline, Identifier sprite, int textureWidth, int textureHeight, int u, int v, int x, int y, int width, int height, int color, CallbackInfo ci) {
-        if (!sprite.getPath().contains("hud/crosshair_attack")) return;
-
-        int newY = this.getAttackIndicatorY();
-        if (newY == -1) {
-            return;
-        }
-
-        ci.cancel();
-        TextureAtlasSprite sprite2 = this.guiSprites.getSprite(sprite);
-        GuiSpriteScaling scaling = this.crosshairaddons$getSpriteScaling(sprite2);
-        if (scaling instanceof GuiSpriteScaling.Stretch) {
-            this.blitSprite(pipeline, sprite2, textureWidth, textureHeight, u, v, x, newY, width, height, -1);
-        } else {
-            this.enableScissor(x, newY, x + width, newY + height);
-            this.blitSprite(pipeline, sprite, x - u, newY - v, textureWidth, textureHeight, color);
-            this.disableScissor();
-        }
-    }
-
-    @Unique
-    private GuiSpriteScaling crosshairaddons$getSpriteScaling(final TextureAtlasSprite sprite) {
-        return ((GuiMetadataSection) sprite.contents().getAdditionalMetadata(GuiMetadataSection.TYPE).orElse(GuiMetadataSection.DEFAULT)).scaling();
     }
 }

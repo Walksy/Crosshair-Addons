@@ -1,0 +1,4 @@
+import net\.minecraft\.util\.profiling\.Profiler; => import net.minecraft.client.Minecraft;
+Profiler\.get\(\) => Minecraft.getInstance().getProfiler()
+isOnCooldown\(new ItemStack\(Items\.SHIELD\)\) => isOnCooldown(Items.SHIELD)
+getCooldownPercent\(new ItemStack\(Items\.SHIELD\), 0\) => getCooldownPercent(Items.SHIELD, 0)

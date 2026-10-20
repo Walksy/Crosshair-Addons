@@ -1,0 +1,4 @@
+import net\.minecraft\.world\.item\.AxeItem; => import net.minecraft.tags.ItemTags;
+player\.getWeaponItem\(\)\.getItem\(\) instanceof AxeItem => player.getWeaponItem().is(ItemTags.AXES)
+com\.mojang\.blaze3d\.pipeline\.RenderPipeline => com.mojang.renderpearl.api.pipeline.RenderPipeline
+Lcom/mojang/blaze3d/pipeline/RenderPipeline; => Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;

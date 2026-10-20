@@ -1,0 +1,1 @@
+ClientboundGameEventPacket\.PLAY_ARROW_HIT_SOUND => ClientboundGameEventPacket.ARROW_HIT_PLAYER

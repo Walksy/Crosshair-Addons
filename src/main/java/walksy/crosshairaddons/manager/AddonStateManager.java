@@ -1,6 +1,7 @@
 package walksy.crosshairaddons.manager;
 
 import main.walksy.lib.core.WalksyLib;
+import main.walksy.lib.api.event.WalksyLibEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -9,7 +10,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import walksy.crosshairaddons.CrosshairAddons;
-import walksy.crosshairaddons.config.Config;
+import walksy.crosshairaddons.config.CrosshairAddonsConfig;
 import walksy.crosshairaddons.config.State;
 
 import java.util.HashSet;
@@ -17,7 +18,6 @@ import java.util.Set;
 
 public class AddonStateManager {
 
-    private boolean setup;
     private int hitmarkerTime;
     private int shieldBreakTime;
     private int hoveredEntityTime;
@@ -25,17 +25,17 @@ public class AddonStateManager {
     private final Set<EntityType<?>> cachedIndicatorEntities;
 
     public AddonStateManager() {
-        this.setup = false;
         this.hitmarkerTime = 0;
         this.shieldBreakTime = 0;
         this.hoveredEntityTime = 0;
         this.cacheUpdateTick = 0;
         this.cachedIndicatorEntities = new HashSet<>();
+        WalksyLibEvents.SHIELD_DISABLE.register(this::onShieldBreak);
     }
 
     public void updateCachedEntityTypes() {
         this.cachedIndicatorEntities.clear();
-        for (String entityID : Config.entityIndicatorEntityList) {
+        for (String entityID : CrosshairAddonsConfig.entityIndicatorEntityList) {
             EntityType<?> type = CrosshairAddons.getEntityTypeFromString(entityID);
             if (type != null) {
                 this.cachedIndicatorEntities.add(type);
@@ -44,29 +44,25 @@ public class AddonStateManager {
     }
 
     private void onShieldBreak(Player player) {
-        this.shieldBreakTime = Config.shieldBreakDuration;
-        Config.shieldBreakAddon.resetAnimation();
+        this.shieldBreakTime = CrosshairAddonsConfig.shieldBreakDuration;
+        CrosshairAddonsConfig.shieldBreakAddon.resetAnimation();
     }
 
     public void onAttackEntity(LivingEntity entity) {
-        if (entity instanceof Player player) {
-            if (Config.hitmarkerToggleOnAttack) {
-                this.hitmarkerTime = Config.hitmarkerDuration;
-                Config.hitmarkerAddon.resetAnimation();
+        if (entity instanceof Player) {
+            if (CrosshairAddonsConfig.hitmarkerToggleOnAttack) {
+                this.hitmarkerTime = CrosshairAddonsConfig.hitmarkerDuration;
+                CrosshairAddonsConfig.hitmarkerAddon.resetAnimation();
             }
         }
     }
 
     public void onArrowHit() {
-        this.hitmarkerTime = Config.hitmarkerDuration;
-        Config.hitmarkerAddon.resetAnimation();
+        this.hitmarkerTime = CrosshairAddonsConfig.hitmarkerDuration;
+        CrosshairAddonsConfig.hitmarkerAddon.resetAnimation();
     }
 
     public void tick() {
-        if (!this.setup) {
-            WalksyLib.getInstance().getShieldStateManager().addDisableCallback("crosshairaddons", this::onShieldBreak);
-            this.setup = true;
-        }
         if (this.hitmarkerTime > 0) {
             this.hitmarkerTime--;
         }
@@ -87,10 +83,10 @@ public class AddonStateManager {
             if (client.crosshairPickEntity != null) {
                 this.hoveredEntityTime++;
                 if (this.hoveredEntityTime == 1) {
-                    Config.entityIndicatorAddon.resetAnimation();
+                    CrosshairAddonsConfig.entityIndicatorAddon.resetAnimation();
                     if (client.crosshairPickEntity instanceof Player player) {
-                        if (WalksyLib.getInstance().getShieldStateManager().isUsingShield(player)) {
-                            Config.shieldIndicatorAddon.resetAnimation();
+                        if (WalksyLib.getInstance().getShieldStateData().isUsingShield(player)) {
+                            CrosshairAddonsConfig.shieldIndicatorAddon.resetAnimation();
                         }
                     }
                 }
@@ -105,28 +101,28 @@ public class AddonStateManager {
         if (client.player == null || client.level == null) return false;
 
         return switch (state) {
-            case ELYTRA -> Config.elytraAddonEnabled
+            case ELYTRA -> CrosshairAddonsConfig.elytraAddonEnabled
                     && client.player.getItemBySlot(EquipmentSlot.CHEST).is(Items.ELYTRA);
 
-            case HITMARKER -> Config.hitmarkerAddonEnabled
-                    && (!Config.hitmarkerStopOnAnimationEnd && this.hitmarkerTime > 0 || Config.hitmarkerStopOnAnimationEnd && !Config.hitmarkerAddon.hasPlayedOnce());
+            case HITMARKER -> CrosshairAddonsConfig.hitmarkerAddonEnabled
+                    && (!CrosshairAddonsConfig.hitmarkerStopOnAnimationEnd && this.hitmarkerTime > 0 || CrosshairAddonsConfig.hitmarkerStopOnAnimationEnd && !CrosshairAddonsConfig.hitmarkerAddon.hasPlayedOnce());
 
-            case SHIELD_BREAK -> Config.shieldBreakAddonEnabled
-                    && (!Config.shieldBreakStopOnAnimationEnd && this.shieldBreakTime > 0 || Config.shieldBreakStopOnAnimationEnd && !Config.shieldBreakAddon.hasPlayedOnce());
+            case SHIELD_BREAK -> CrosshairAddonsConfig.shieldBreakAddonEnabled
+                    && (!CrosshairAddonsConfig.shieldBreakStopOnAnimationEnd && this.shieldBreakTime > 0 || CrosshairAddonsConfig.shieldBreakStopOnAnimationEnd && !CrosshairAddonsConfig.shieldBreakAddon.hasPlayedOnce());
 
             case SHIELD_INDICATOR -> {
-                if (!Config.shieldIndicatorEnabled) yield false;
+                if (!CrosshairAddonsConfig.shieldIndicatorEnabled) yield false;
                 Entity target = client.crosshairPickEntity;
                 if (target instanceof Player player) {
-                    yield WalksyLib.getInstance().getShieldStateManager().isUsingShield(player);
+                    yield WalksyLib.getInstance().getShieldStateData().isUsingShield(player);
                 }
                 yield false;
             }
 
             case INDICATOR -> {
-                if (!Config.entityIndicatorAddonEnabled) yield false;
+                if (!CrosshairAddonsConfig.entityIndicatorAddonEnabled) yield false;
                 Entity target = client.crosshairPickEntity;
-                if (Config.entityIndicatorShowAll && target != null) yield true;
+                if (CrosshairAddonsConfig.entityIndicatorShowAll && target != null) yield true;
                 if (target == null) yield false;
                 yield this.cachedIndicatorEntities.contains(target.getType());
             }
