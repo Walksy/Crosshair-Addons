@@ -59,8 +59,8 @@ public class CrosshairAddons implements ModInitializer {
         });
     }
 
-    public static HudElement addonHud(final Supplier<PixelGridAnimation> animation, final State state) {
-        return HudElements.when(() -> addonsVisible() && stateManager.get(state), HudElements.pixelGrid(animation, () -> CrosshairAddonsConfig.environmentBlend));
+    public static HudElement addonHud(final Supplier<PixelGridAnimation> animation, final State state, final String iconKey) {
+        return new AddonHud(HudElements.when(() -> addonsVisible() && stateManager.get(state), HudElements.pixelGrid(animation, () -> CrosshairAddonsConfig.environmentBlend)), iconKey);
     }
 
     public static boolean addonsVisible() {
