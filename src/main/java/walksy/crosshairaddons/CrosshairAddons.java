@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 
@@ -61,6 +62,10 @@ public class CrosshairAddons implements ModInitializer {
 
     public static HudElement addonHud(final Supplier<PixelGridAnimation> animation, final State state, final String iconKey) {
         return new AddonHud(HudElements.when(() -> addonsVisible() && stateManager.get(state), HudElements.pixelGrid(animation, () -> CrosshairAddonsConfig.environmentBlend)), iconKey);
+    }
+
+    public static HudElement progressAddonHud(final Supplier<PixelGridAnimation> animation, final State state, final String iconKey, final DoubleSupplier progress) {
+        return new AddonHud(HudElements.when(() -> addonsVisible() && stateManager.get(state), new ProgressPixelGridHud(animation, () -> CrosshairAddonsConfig.environmentBlend, progress)), iconKey);
     }
 
     public static boolean addonsVisible() {

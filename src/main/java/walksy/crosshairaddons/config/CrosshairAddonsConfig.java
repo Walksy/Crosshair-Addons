@@ -56,6 +56,17 @@ public final class CrosshairAddonsConfig implements WalksyLibApi {
         .set(13, 4).set(13, 5).set(13, 6).set(13, 7)
         .build()).offset(0, 11);
 
+    // Same rocket shape as the old texture-based indicator; it empties from the tip as the boost runs out.
+    public static boolean rocketAddonEnabled = true;
+    public static PixelGridAnimation rocketAddon = new PixelGridAnimation(PixelGrid.create()
+        .set(12, 5)
+        .set(2, 6).set(3, 6).set(4, 6).set(5, 6).set(6, 6).set(7, 6).set(8, 6).set(9, 6).set(10, 6).set(11, 6).set(12, 6).set(13, 6)
+        .set(1, 7).set(2, 7).set(3, 7).set(4, 7).set(5, 7).set(6, 7).set(7, 7).set(8, 7).set(9, 7).set(10, 7).set(11, 7).set(12, 7).set(13, 7)
+        .set(1, 8).set(12, 8)
+        .set(2, 9)
+        .set(2, 10)
+        .build()).offset(0, 19);
+
     public static boolean hitmarkerAddonEnabled = true;
     public static boolean hitmarkerToggleOnAttack = false;
     public static boolean hitmarkerStopOnAnimationEnd = true;
@@ -183,6 +194,14 @@ public final class CrosshairAddonsConfig implements WalksyLibApi {
                         .saveKey("Elytra Addon Icon")
                         .availability(() -> elytraAddonEnabled, AvailabilityMode.HIDE)
                         .hudSpace("Elytra", CrosshairAddons.addonHud(() -> elytraAddon, State.ELYTRA, "Elytra Addon Icon"))
+                        .build())
+                    .build())
+                .group(OptionGroup.builder("Rocket Duration")
+                    .option(toggle("Rocket Duration", "Rocket Addon Enabled", () -> rocketAddonEnabled, true, value -> rocketAddonEnabled = value, () -> true, "Shows how much boost is left on the firework rocket you're flying with"))
+                    .option(Options.ofPixelGridAnimation("Icon", () -> rocketAddon, rocketAddon, value -> rocketAddon = value)
+                        .saveKey("Rocket Addon Icon")
+                        .availability(() -> rocketAddonEnabled, AvailabilityMode.HIDE)
+                        .hudSpace("Rocket Duration", CrosshairAddons.progressAddonHud(() -> rocketAddon, State.ROCKET, "Rocket Addon Icon", () -> CrosshairAddons.getStateManager().getRocketProgress()))
                         .build())
                     .build())
                 .group(OptionGroup.builder("Hitmarker")

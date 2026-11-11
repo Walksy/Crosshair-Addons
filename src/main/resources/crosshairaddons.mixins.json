@@ -3,6 +3,7 @@
 	"package": "walksy.crosshairaddons.mixin",
 	"compatibilityLevel": "JAVA_${java_version}",
 	"client": [
+		"FireworkRocketEntityMixin",
 		"GuiGraphicsExtractorMixin"
 	],
 	"injectors": {
