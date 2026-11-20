@@ -10,10 +10,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
-/**
- * A pixel-grid icon that is cut off from the right as {@code progress} falls from 1 to 0.
- * Size, offsets and scaling come from the regular pixel-grid element so it lays out exactly like the other addons.
- */
 final class ProgressPixelGridHud implements HudElement {
     private final Supplier<PixelGridAnimation> animation;
     private final BooleanSupplier blend;
@@ -56,7 +52,6 @@ final class ProgressPixelGridHud implements HudElement {
             return null;
         }
         final int span = maxX - minX + 1;
-        // Keep at least one column while the indicator is showing so it never vanishes before the rocket does.
         final int columns = Math.max(1, (int) Math.ceil(Math.max(0f, Math.min(1f, progress)) * span));
         if (columns >= span) {
             return frame;

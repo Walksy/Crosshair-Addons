@@ -56,8 +56,8 @@ public final class CrosshairAddonsConfig implements WalksyLibApi {
         .set(13, 4).set(13, 5).set(13, 6).set(13, 7)
         .build()).offset(0, 11);
 
-    // Same rocket shape as the old texture-based indicator; it empties from the tip as the boost runs out.
     public static boolean rocketAddonEnabled = true;
+    public static boolean rocketHideWhenNotGliding = true;
     public static PixelGridAnimation rocketAddon = new PixelGridAnimation(PixelGrid.create()
         .set(12, 5)
         .set(2, 6).set(3, 6).set(4, 6).set(5, 6).set(6, 6).set(7, 6).set(8, 6).set(9, 6).set(10, 6).set(11, 6).set(12, 6).set(13, 6)
@@ -198,6 +198,7 @@ public final class CrosshairAddonsConfig implements WalksyLibApi {
                     .build())
                 .group(OptionGroup.builder("Rocket Duration")
                     .option(toggle("Rocket Duration", "Rocket Addon Enabled", () -> rocketAddonEnabled, true, value -> rocketAddonEnabled = value, () -> true, "Shows how much boost is left on the firework rocket you're flying with"))
+                    .option(toggle("Hide When Not Gliding", "Rocket Hide When Not Gliding", () -> rocketHideWhenNotGliding, true, value -> rocketHideWhenNotGliding = value, () -> rocketAddonEnabled, "Hide it as soon as you stop gliding, like when you take off your elytra, instead of waiting for the rocket to burn out"))
                     .option(Options.ofPixelGridAnimation("Icon", () -> rocketAddon, rocketAddon, value -> rocketAddon = value)
                         .saveKey("Rocket Addon Icon")
                         .availability(() -> rocketAddonEnabled, AvailabilityMode.HIDE)

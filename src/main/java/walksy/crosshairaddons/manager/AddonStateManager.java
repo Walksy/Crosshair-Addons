@@ -27,8 +27,6 @@ public class AddonStateManager {
     private int cacheUpdateTick;
     private final Set<EntityType<?>> cachedIndicatorEntities;
 
-    // Vanilla rolls a rocket's lifetime as 10 * (1 + flight) + nextInt(6) + nextInt(7) on the server only,
-    // so the client estimates it using the mean of those two rolls.
     private static final float ROCKET_LIFETIME_RANDOM_MEAN = 5.5f;
     private boolean rocketActive;
     private float rocketProgress;
@@ -71,10 +69,6 @@ public class AddonStateManager {
         CrosshairAddonsConfig.hitmarkerAddon.resetAnimation();
     }
 
-    /**
-     * Called from each boosting rocket's tick. Client ticks run before entity ticks, so {@link #tick()} clears the
-     * state first and any rocket still alive re-reports itself; a removed rocket simply stops reporting.
-     */
     public void onBoostingRocketTick(final FireworkRocketEntity rocket, final int life) {
         final Fireworks fireworks = rocket.getItem().get(DataComponents.FIREWORKS);
         final int flight = 1 + (fireworks == null ? 0 : fireworks.flightDuration());

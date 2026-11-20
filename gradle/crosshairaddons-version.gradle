@@ -273,8 +273,6 @@ if (neoforge) {
         implementation files(libraryJar)
     }
 
-    // Fail only when this NeoForge project is actually compiled, so a missing local WalksyLib jar
-    // doesn't break configuration (and with it every Fabric task) when Gradle is run from the IDE.
     tasks.named('compileJava') {
         doFirst {
             if (!libraryJar.file) {
